@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
 import {IRouterClient} from "@chainlink/contracts-ccip@1.4.0/src/v0.8/ccip/interfaces/IRouterClient.sol";
 import {OwnerIsCreator} from "@chainlink/contracts-ccip@1.4.0/src/v0.8/shared/access/OwnerIsCreator.sol";
@@ -70,10 +70,10 @@ contract CCIPRouter is CCIPReceiver, OwnerIsCreator {
     constructor(
         address _router, 
         address _link,
-        address _socialContract
+        address _pool
     ) CCIPReceiver(_router) {
         s_linkToken = IERC20(_link);
-        socialContract = _socialContract;
+        pool = MockedPool(_pool);
     }
 
     /// @dev Modifier that checks if the chain with the given destinationChainSelector is allowlisted.
@@ -141,7 +141,6 @@ contract CCIPRouter is CCIPReceiver, OwnerIsCreator {
         string calldata _text
     )
         external
-        onlySocial
         onlyAllowlistedDestinationChain(_destinationChainSelector)
         validateReceiver(_receiver)
         returns (bytes32 messageId)
@@ -249,7 +248,7 @@ contract CCIPRouter is CCIPReceiver, OwnerIsCreator {
     {
         s_lastReceivedMessageId = any2EvmMessage.messageId; // fetch the messageId
         // s_lastReceivedText = abi.decode(any2EvmMessage.data, (string)); // abi-decoding of the sent text
-        (address onBehalf, uint256 amount) = abi.decode(any2EvmMessage.data, (address, amount));
+        (address onBehalf, uint256 amount) = abi.decode(any2EvmMessage.data, (address, uint256));
 
         howMuchDeposited[onBehalf] += amount;
         

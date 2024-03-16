@@ -45,6 +45,10 @@ contract SocialNetwork {
     mapping(uint256 => address) projectAddress;
     mapping(uint256 => uint64) projectChainSelector;
 
+    mapping(uint256 => uint256) projectDeposit;
+    mapping(address => uint256) userDeposit;
+    uint256 overallDeposit;
+
     mapping(uint256 => Comment) comments;
     mapping(uint256 => uint256) projectCommentsCount;
     mapping(uint256 => mapping(uint256 => uint256)) projectCommentsIds;
@@ -146,7 +150,10 @@ contract SocialNetwork {
             /// deposit on same chain
             return;
         }
-        router.call(abi.encodeWithSelector(SELECTOR, chSelector, projectAddress[projectId]));
+        string memory _text = string(abi.encode(msg.sender, amount));
+        projectDeposit[projectId] += amount;
+        overallDeposit += amount;
+        router.call(abi.encodeWithSelector(SELECTOR, chSelector, projectAddress[projectId], _text));
     }
 
     modifier hasPass() {
