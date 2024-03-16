@@ -15,6 +15,8 @@ contract Pass {
     ISemaphoreVerifier public semaphoreVerifier;
 
     uint256 public tillTimestamp;
+    
+    uint256 internal immutable externalNullifierHash;
 
     mapping(address => uint256) passId;
     mapping(address => uint256) passTillTimestamp;
@@ -23,16 +25,28 @@ contract Pass {
     error NotPassHolder(address user);
     error PassExpired(address user, uint256 validTillTimestamp);
 
+    function hashToField(bytes memory value) internal pure returns (uint256) {
+		return uint256(keccak256(abi.encodePacked(value))) >> 8;
+	}
+
     constructor(
         uint256 _periodSeconds,
         uint256 _passCostPerPeriod,
         address _passPaymentToken,
-        address _semaphoreVerifier
+        address _semaphoreVerifier,
+        string memory _appId,
+        string memory _action
     ) {
         periodSeconds = _periodSeconds;
         passCostPerPeriod = _passCostPerPeriod;
         passPaymentToken = IERC20(_passPaymentToken);
         semaphoreVerifier = ISemaphoreVerifier(_semaphoreVerifier);
+        externalNullifierHash = hashToField(
+            abi.encodePacked(
+                hashToField(abi.encodePacked(_appId)),
+                _action
+            )
+        );
     }
 
     function processPayment(
@@ -52,7 +66,6 @@ contract Pass {
         uint256 root,
         uint256 signalHash,
         uint256 nullifierHash,
-        uint256 externalNullifierHash,
         uint256[8] calldata proof
     ) public returns (uint256) {
         processPayment(paymentPeriod);
