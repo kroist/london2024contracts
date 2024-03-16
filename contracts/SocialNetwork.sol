@@ -21,9 +21,12 @@ contract SocialNetwork {
         uint256 id;
         uint256 projectId;
         bytes32 textHash;
-        int64 rating;
+        int256 rating;
         address user;
     }
+
+    event NewComment(uint256 projectId, address user, uint256 commentId);
+    event NewRatingChange(uint256 commentId, int256 delta);
 
     error CommentNotExisting(uint256 commentId);
 
@@ -87,15 +90,17 @@ contract SocialNetwork {
         );
         projectCommentsCount[projectId]++;
         projectCommentsIds[projectId][projectCommentsCount[projectId]] = commentsCount;
+        emit NewComment(projectId, msg.sender, commentsCount);
     }
 
-    function changeCommentRating(uint256 commentId, int64 delta) public hasPass {
+    function changeCommentRating(uint256 commentId, int256 delta) public hasPass {
         require(delta == -1 || delta == 1, "|delta| = 1");
         Comment memory com = comments[commentId];
         if (com.id == 0) {
             revert CommentNotExisting(commentId);
         }
         comments[commentId] = Comment(com.id, com.projectId, com.textHash, com.rating+delta, com.user);
+        emit NewRatingChange(com.id, delta);
     }
 
     modifier hasPass() {

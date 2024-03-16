@@ -64,13 +64,17 @@ contract Pass {
         address passReceiver,
         uint256 paymentPeriod,
         uint256 root,
-        uint256 signalHash,
         uint256 nullifierHash,
         uint256[8] calldata proof
     ) public returns (uint256) {
         processPayment(paymentPeriod);
         semaphoreVerifier.verifyProof(
-            proof, [root, nullifierHash, signalHash, externalNullifierHash]
+            proof, [
+                root, 
+                nullifierHash, 
+                hashToField(abi.encodePacked(msg.sender)), 
+                externalNullifierHash
+            ]
         );
         passesCount++;
         passId[passReceiver] = passesCount;
