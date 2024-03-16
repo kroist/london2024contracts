@@ -31,6 +31,7 @@ contract SocialNetwork {
 
     error ProjectNotExisting(uint256 projectId);
     error CommentNotExisting(uint256 commentId);
+    error NotSupported();
 
     address owner;
 
@@ -40,15 +41,23 @@ contract SocialNetwork {
     uint256 public commentsCount;
     mapping(uint256 => Project) projects;
     mapping(uint256 => int256) projectRating;
+
+    mapping(uint256 => address) projectAddress;
+    mapping(uint256 => uint64) projectChainSelector;
+
     mapping(uint256 => Comment) comments;
     mapping(uint256 => uint256) projectCommentsCount;
     mapping(uint256 => mapping(uint256 => uint256)) projectCommentsIds;
 
+    address public router;
+
     constructor(
-        address _passAddress
+        address _passAddress,
+        address _router
     ) {
         owner = msg.sender;
         pass = Pass(_passAddress);
+        router = _router;
     }
 
     function getProjects() public view returns (Project[] memory) {
@@ -119,6 +128,25 @@ contract SocialNetwork {
         // uint256 rating = projectRating[projectId] / 
         projects[projectId] = Project(proj.id, proj.name, proj.network, proj.url, proj.rating);
         emit NewRatingChange(proj.id, delta);
+    }
+
+    function setProjectChainInfo(uint256 projectId, uint64 chSelector, address addr) public onlyOwner {
+        projectChainSelector[projectId] = chSelector;
+        projectAddress[projectId] = addr;
+    }
+
+    bytes4 private constant SELECTOR = bytes4(keccak256(bytes("sendMessagePayLINK(uint64,address,string)")));
+
+    function depositIntoPool(uint256 projectId, uint256 amount) public hasPass {
+        uint64 chSelector = projectChainSelector[projectId];
+        if (chSelector == 0) {
+            revert NotSupported();
+        }
+        if (chSelector == 12532609583862916517) {
+            /// deposit on same chain
+            return;
+        }
+        router.call(abi.encodeWithSelector(SELECTOR, chSelector, projectAddress[projectId]));
     }
 
     modifier hasPass() {
