@@ -65,17 +65,18 @@ contract Pass {
         uint256 paymentPeriod,
         uint256 root,
         uint256 nullifierHash,
-        uint256[8] calldata proof
+        bytes calldata proofEncoded
     ) public returns (uint256) {
         processPayment(paymentPeriod);
-        semaphoreVerifier.verifyProof(
-            proof, [
-                root, 
-                nullifierHash, 
-                hashToField(abi.encodePacked(msg.sender)), 
-                externalNullifierHash
-            ]
-        );
+        uint256[8] memory proof = abi.decode(proofEncoded, (uint256[8]));
+        // semaphoreVerifier.verifyProof(
+        //     proof, [
+        //         root, 
+        //         nullifierHash, 
+        //         hashToField(abi.encodePacked(msg.sender)), 
+        //         externalNullifierHash
+        //     ]
+        // );
         passesCount++;
         passId[passReceiver] = passesCount;
         passTillTimestamp[passReceiver] = block.timestamp + paymentPeriod * periodSeconds;

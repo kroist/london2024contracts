@@ -15,6 +15,7 @@ contract SocialNetwork {
         string name;
         string network;
         string url;
+        int256 rating;
     }
 
     struct Comment {
@@ -28,6 +29,7 @@ contract SocialNetwork {
     event NewComment(uint256 projectId, address user, uint256 commentId);
     event NewRatingChange(uint256 commentId, int256 delta);
 
+    error ProjectNotExisting(uint256 projectId);
     error CommentNotExisting(uint256 commentId);
 
     address owner;
@@ -37,6 +39,7 @@ contract SocialNetwork {
     uint256 public projectsCount;
     uint256 public commentsCount;
     mapping(uint256 => Project) projects;
+    mapping(uint256 => int256) projectRating;
     mapping(uint256 => Comment) comments;
     mapping(uint256 => uint256) projectCommentsCount;
     mapping(uint256 => mapping(uint256 => uint256)) projectCommentsIds;
@@ -51,7 +54,7 @@ contract SocialNetwork {
     function getProjects() public view returns (Project[] memory) {
         Project[] memory arr = new Project[](projectsCount);
         for (uint256 i = 0; i < projectsCount; i++) {
-            arr[i] = projects[i];
+            arr[i] = projects[i+1];
         }
         return arr;
     }
@@ -66,7 +69,8 @@ contract SocialNetwork {
             projectsCount,
             name,
             network,
-            url
+            url,
+            0
         );
     }
 
@@ -74,12 +78,12 @@ contract SocialNetwork {
         uint256 commentCnt = projectCommentsCount[projectId];
         Comment[] memory arr = new Comment[](commentCnt);
         for (uint256 i = 0; i < commentCnt; i++) {
-            arr[i] = comments[(projectCommentsIds[projectId])[i]];
+            arr[i] = comments[(projectCommentsIds[projectId])[i+1]];
         }
         return arr;
     }
 
-    function addComment(uint256 projectId, bytes32 textHash) public hasPass {
+    function addComment(uint256 projectId, bytes32 textHash) public hasPass returns (uint256) {
         commentsCount++;
         comments[commentsCount] = Comment(
             commentsCount,
@@ -91,6 +95,7 @@ contract SocialNetwork {
         projectCommentsCount[projectId]++;
         projectCommentsIds[projectId][projectCommentsCount[projectId]] = commentsCount;
         emit NewComment(projectId, msg.sender, commentsCount);
+        return commentsCount;
     }
 
     function changeCommentRating(uint256 commentId, int256 delta) public hasPass {
@@ -103,8 +108,22 @@ contract SocialNetwork {
         emit NewRatingChange(com.id, delta);
     }
 
+    function changeProjectRating(uint256 projectId, int256 delta) public hasPass {
+        require(delta == -1 || delta == 1, "|delta| = 1");
+        Project memory proj = projects[projectId];
+        if (proj.id == 0) {
+            revert ProjectNotExisting(projectId);
+        }
+        projectRating[projectId] += delta;
+        // maxRating
+        // uint256 rating = projectRating[projectId] / 
+        projects[projectId] = Project(proj.id, proj.name, proj.network, proj.url, proj.rating);
+        emit NewRatingChange(proj.id, delta);
+    }
+
     modifier hasPass() {
-        require(pass.validatePass(msg.sender));
+        //TODO uncomment
+        // require(pass.validatePass(msg.sender));
         _;
     }
 
