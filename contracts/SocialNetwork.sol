@@ -153,7 +153,8 @@ contract SocialNetwork {
         string memory _text = string(abi.encode(msg.sender, amount));
         projectDeposit[projectId] += amount;
         overallDeposit += amount;
-        router.call(abi.encodeWithSelector(SELECTOR, chSelector, projectAddress[projectId], _text));
+        (bool success, bytes memory data) = router.call(abi.encodeWithSelector(SELECTOR, chSelector, projectAddress[projectId], _text));
+        require(success, "Internal call failed");
     }
 
     modifier hasPass() {
